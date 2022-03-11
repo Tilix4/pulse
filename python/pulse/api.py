@@ -222,11 +222,6 @@ class Commit(PulseLocalObject, PulseDbObject):
         """ list of product names"""
         self._storage_vars = ['version', 'products', 'files', 'comment', 'products_inputs']
         self.directory = os.path.join(resource.get_products_directory(self.version))
-        # TODO : rename commit_product_data_directory
-        self.product_users_file = os.path.normpath(os.path.join(
-            self.project.commit_product_data_directory,
-            fu.uri_to_json_filename(self.uri)
-        ))
 
     def remove_from_local_products(self, recursive_clean=False):
         """
