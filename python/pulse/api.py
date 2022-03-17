@@ -598,11 +598,11 @@ class Work(PulseLocalObject):
         trash_directory = self._get_trash_directory()
         if not os.path.exists(trash_directory):
             os.makedirs(trash_directory)
-
-        # remove work output link
-        work_output = fu.path_join(self.directory, cfg.work_output_dir)
-        if os.path.exists(work_output):
-            os.remove(work_output)
+    # TODO : ensure every call to work.output_directory is done with the attribute and not with work.directory + cfg.output_dirname
+        # remove work output link if needed
+        if self.project.cfg.use_linked_output_directory:
+            if os.path.exists(self.output_directory):
+                os.remove(self.output_directory)
 
         # move work product directory
         if os.path.exists(products_directory):
