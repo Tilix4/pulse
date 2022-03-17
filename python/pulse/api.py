@@ -128,7 +128,7 @@ class PulseLocalObject:
     def _get_input_directory(self, product_path):
         # if product path is set, test the product path location exists
         if product_path:
-            root_directory = os.path.join(self.get_products_directory(), product_path)
+            root_directory = fu.path_join(self.get_products_directory(), product_path)
             if not os.path.exists(root_directory):
                 raise PulseError("product path does not exists : " + root_directory)
             # return the absolute product path
@@ -146,7 +146,7 @@ class PulseLocalObject:
         """
 
         root_directory = self._get_input_directory(product_path)
-        input_data_filepath = os.path.join(root_directory, cfg.input_data_filename)
+        input_data_filepath = fu.path_join(root_directory, cfg.input_data_filename)
 
         if not os.path.exists(input_data_filepath):
             return {}
@@ -158,7 +158,7 @@ class PulseLocalObject:
         for root, dirs, files in os.walk(self.directory):
             for name in files:
                 if name == cfg.input_data_filename:
-                    input_data_files.append(os.path.join(root, name))
+                    input_data_files.append(fu.path_join(root, name))
         return input_data_files
 
     def _restore_inputs(self, resolve_conflict=False):
@@ -225,23 +225,23 @@ class PulseLocalObject:
         subpath = uri_standards.convert_to_dict(uri)["subpath"]
 
         input_directory = self._get_input_directory(product_path)
-        input_linked_directory = os.path.join(input_directory, cfg.work_input_dir)
+        input_linked_directory = fu.path_join(input_directory, cfg.work_input_dir)
 
         if not os.path.exists(input_linked_directory):
             os.makedirs(input_linked_directory)
 
         if self.project.cfg.use_linked_input_directories:
-            input_link_directory = os.path.join(input_linked_directory, input_name.replace("/", "~"))
+            input_link_directory = fu.path_join(input_linked_directory, input_name.replace("/", "~"))
 
             if os.path.exists(input_link_directory):
                 os.remove(input_link_directory)
-            fu.make_directory_link(input_link_directory, os.path.join(commit.directory, subpath))
+            fu.make_directory_link(input_link_directory, fu.path_join(commit.directory, subpath))
 
         # updated input data entry to disk if needed
         new_uri = commit.uri + "/" + subpath
         if new_uri != old_uri:
             inputs[input_name] = new_uri
-            input_data_filepath = os.path.join(input_directory, cfg.input_data_filename)
+            input_data_filepath = fu.path_join(input_directory, cfg.input_data_filename)
             with open(input_data_filepath, "w") as write_file:
                 json.dump(inputs, write_file, indent=4, sort_keys=True)
 
@@ -264,11 +264,11 @@ class Commit(PulseLocalObject, PulseDbObject):
         self.products_inputs = []
         self.version = int(version)
         self.products = []
-        self.pulse_filepath = os.path.join(self.get_products_directory(), cfg.pulse_filename)
+        self.pulse_filepath = fu.path_join(self.get_products_directory(), cfg.pulse_filename)
         """ list of product names"""
         self._storage_vars = ['version', 'products', 'files', 'comment', 'products_inputs']
-        self.directory = os.path.join(resource.get_products_directory(self.version))
-        self.product_users_file = os.path.normpath(os.path.join(
+        self.directory = fu.path_join(resource.get_products_directory(self.version))
+        self.product_users_file = os.path.normpath(fu.path_join(
             self.project.commit_product_data_directory,
             fu.uri_to_json_filename(self.uri)
         ))
@@ -288,9 +288,9 @@ class Commit(PulseLocalObject, PulseDbObject):
         fu.lock_directory_content(self.directory, lock=False)
         # remove input directories
         for input_data_file in self._get_input_data_files():
-            input_dir = os.path.join(os.path.dirname(input_data_file), cfg.work_input_dir)
+            input_dir = fu.path_join(os.path.dirname(input_data_file), cfg.work_input_dir)
             for dir in os.listdir(input_dir):
-                os.remove(os.path.join(input_dir, dir))
+                os.remove(fu.path_join(input_dir, dir))
 
         shutil.rmtree(self.directory)
 
@@ -345,14 +345,14 @@ class Work(PulseLocalObject):
         # TODO : this seems redundant and incoherent in wording
         self.directory = self.resource.sandbox_path
         self.input_data_filename = "input_data.json"
-        self.work_inputs_file = os.path.join(self.directory, self.input_data_filename)
-        self.data_file = os.path.join(self.project.work_data_directory, fu.uri_to_json_filename(self.resource.uri))
-        self.product_users_file = os.path.normpath(os.path.join(
+        self.work_inputs_file = fu.path_join(self.directory, self.input_data_filename)
+        self.data_file = fu.path_join(self.project.work_data_directory, fu.uri_to_json_filename(self.resource.uri))
+        self.product_users_file = os.path.normpath(fu.path_join(
             self.project.work_product_data_directory,
             fu.uri_to_json_filename(self.resource.uri)
         ))
-        self.output_directory = os.path.join(self.directory, cfg.work_output_dir)
-        self.input_directory = os.path.join(self.directory, cfg.work_input_dir)
+        self.output_directory = fu.path_join(self.directory, cfg.work_output_dir)
+        self.input_directory = fu.path_join(self.directory, cfg.work_input_dir)
 
     def add_input(self, uri, input_name=None, consider_work_product=False, product_path=None):
         """
@@ -379,7 +379,7 @@ class Work(PulseLocalObject):
             raise PulseError("input already exists : " + input_name)
 
         input_directory = self._get_input_directory(product_path)
-        input_data_filepath = os.path.join(input_directory, self.input_data_filename)
+        input_data_filepath = fu.path_join(input_directory, self.input_data_filename)
         inputs[input_name] = uri
         with open(input_data_filepath, "w") as write_file:
             json.dump(inputs, write_file, indent=4, sort_keys=True)
@@ -400,14 +400,14 @@ class Work(PulseLocalObject):
         if not directory:
             directory = self.directory
 
-        input_data_filepath = os.path.join(directory, self.input_data_filename)
+        input_data_filepath = fu.path_join(directory, self.input_data_filename)
 
         inputs.pop(input_name, None)
         with open(input_data_filepath, "w") as write_file:
             json.dump(inputs, write_file, indent=4, sort_keys=True)
 
         # remove linked input directory
-        input_directory = (os.path.join(self.directory, cfg.work_input_dir, input_name))
+        input_directory = (fu.path_join(self.directory, cfg.work_input_dir, input_name))
         if os.path.exists(input_directory):
             os.remove(input_directory)
 
@@ -417,7 +417,7 @@ class Work(PulseLocalObject):
 
     def _get_trash_directory(self):
         date_time = datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
-        path = os.path.join(self.project.cfg.get_work_user_root(), self.project.name, "TRASH") + os.sep
+        path = fu.path_join(self.project.cfg.get_work_user_root(), self.project.name, "TRASH") + os.sep
         path += self.resource.uri + "-" + date_time
         return path
 
@@ -444,14 +444,14 @@ class Work(PulseLocalObject):
 
         # create junction point to the output directory if needed
         if self.project.cfg.use_linked_output_directory:
-            work_output_path = os.path.join(self.directory, cfg.work_output_dir)
+            work_output_path = fu.path_join(self.directory, cfg.work_output_dir)
 
             # link work output directory to its current output product directory
             fu.make_directory_link(work_output_path, work_product_directory)
 
         # create input directory if needed
         if self.project.cfg.use_linked_input_directories:
-            work_input_path = os.path.join(self.directory, cfg.work_input_dir)
+            work_input_path = fu.path_join(self.directory, cfg.work_input_dir)
             if not os.path.exists(work_input_path):
                 os.makedirs(work_input_path)
 
@@ -600,13 +600,13 @@ class Work(PulseLocalObject):
             os.makedirs(trash_directory)
 
         # remove work output link
-        work_output = os.path.join(self.directory, cfg.work_output_dir)
+        work_output = fu.path_join(self.directory, cfg.work_output_dir)
         if os.path.exists(work_output):
             os.remove(work_output)
 
         # move work product directory
         if os.path.exists(products_directory):
-            shutil.move(products_directory,  os.path.join(trash_directory, "PRODUCTS"))
+            shutil.move(products_directory,  fu.path_join(trash_directory, "PRODUCTS"))
 
         # move work files
         shutil.move(self.directory, trash_directory + "/work")
@@ -632,7 +632,7 @@ class Work(PulseLocalObject):
         :param index:
         :return: filepath
         """
-        return os.path.join(
+        return fu.path_join(
             self.directory,
             cfg.DEFAULT_VERSION_PREFIX + str(index).zfill(cfg.DEFAULT_VERSION_PADDING) + ".pipe"
         )
@@ -652,7 +652,7 @@ class Work(PulseLocalObject):
         products_directory = self.get_products_directory()
         for root, subdirectories, files in os.walk(products_directory):
             for f in files:
-                filepath = os.path.join(root, f)
+                filepath = fu.path_join(root, f)
                 relative_path = filepath[len(products_directory):]
                 diff["product-" + relative_path] = "added"
         return diff
@@ -683,7 +683,7 @@ class Resource(PulseDbObject):
             project,
             uri_standards.convert_from_dict({"entity": entity, "resource_type": resource_type})
         )
-        self.sandbox_path = os.path.join(
+        self.sandbox_path = fu.path_join(
             project.cfg.get_work_user_root(), project.name, self.uri).replace("\\", "/")
         self._storage_vars = [
             'lock_state', 'lock_user', 'last_version', 'resource_type', 'entity', 'repository', 'metas']
@@ -697,7 +697,7 @@ class Resource(PulseDbObject):
         :return: string
         """
         version = str(version_index).zfill(cfg.DEFAULT_VERSION_PADDING)
-        path = os.path.join(
+        path = fu.path_join(
             self.project.cfg.get_product_user_root(),
             self.project.name,
             self.uri,
@@ -1004,7 +1004,7 @@ class Project:
         """
         if not os.path.exists(self.work_data_directory):
             return []
-        path_list = glob.glob(os.path.join(self.work_data_directory, uri_pattern) + ".json")
+        path_list = glob.glob(fu.path_join(self.work_data_directory, uri_pattern) + ".json")
         file_list = [os.path.basename(x) for x in path_list]
         return [fu.json_filename_to_uri(filename) for filename in file_list]
 
@@ -1037,11 +1037,11 @@ class Project:
         load the project configuration from database
         """
         self.cfg.db_read()
-        self.work_directory = os.path.join(self.cfg.get_work_user_root(), self.name)
-        self.work_data_directory = os.path.join(self.work_directory, cfg.pulse_data_dir, "works")
-        product_root = os.path.join(self.cfg.get_product_user_root(), self.name)
-        self.commit_product_data_directory = os.path.join(product_root, cfg.pulse_data_dir, "commit_products")
-        self.work_product_data_directory = os.path.join(product_root, cfg.pulse_data_dir, "work_products")
+        self.work_directory = fu.path_join(self.cfg.get_work_user_root(), self.name)
+        self.work_data_directory = fu.path_join(self.work_directory, cfg.pulse_data_dir, "works")
+        product_root = fu.path_join(self.cfg.get_product_user_root(), self.name)
+        self.commit_product_data_directory = fu.path_join(product_root, cfg.pulse_data_dir, "commit_products")
+        self.work_product_data_directory = fu.path_join(product_root, cfg.pulse_data_dir, "work_products")
         self.initialize_sandbox()
 
     def initialize_sandbox(self):
@@ -1056,7 +1056,7 @@ class Project:
                 ctypes.windll.kernel32.SetFileAttributesW(os.path.dirname(directory), 2)
 
         # write connexion path and settings to local project settings
-        json_path = os.path.join(self.work_directory, cfg.pulse_data_dir, cfg.project_settings)
+        json_path = fu.path_join(self.work_directory, cfg.pulse_data_dir, cfg.project_settings)
         data = {'connection': self.cnx.get_settings()}
         with open(json_path, "w") as write_file:
             json.dump(data, write_file, indent=4, sort_keys=True)
@@ -1242,11 +1242,11 @@ class Connection:
 
 def get_adapter_directory_path(adapter_type):
     pulse_filepath = os.path.dirname(os.path.realpath(__file__))
-    return os.path.join(pulse_filepath, adapter_type + "_adapters")
+    return fu.path_join(pulse_filepath, adapter_type + "_adapters")
 
 
 def get_adapter_list(adapter_type):
-    files = [os.path.basename(x) for x in glob.glob(os.path.join(get_adapter_directory_path(adapter_type), "*.py"))]
+    files = [os.path.basename(x) for x in glob.glob(fu.path_join(get_adapter_directory_path(adapter_type), "*.py"))]
     files.remove("interface_class.py")
     files.remove("__init__.py")
     return [os.path.splitext(x)[0] for x in files]
@@ -1260,7 +1260,7 @@ def import_adapter(adapter_type, adapter_name):
     :param adapter_name:
     :return: the adapter module
     """
-    path = os.path.join(get_adapter_directory_path(adapter_type), adapter_name + ".py")
+    path = fu.path_join(get_adapter_directory_path(adapter_type), adapter_name + ".py")
 
     try:
         # python 3 import
@@ -1280,14 +1280,14 @@ def get_project_from_path(path, username="", password=""):
 
     # find the pulse_data_dir to determine if it's a product or work URI
     for i in range(1, len(path_list)):
-        if os.path.exists(os.path.join(path, cfg.pulse_data_dir, "works")):
+        if os.path.exists(fu.path_join(path, cfg.pulse_data_dir, "works")):
             mode = "work"
             break
         path = os.path.dirname(path)
     if not mode:
         raise PulseError("can't convert path to uri, no project found")
     project_name = path.split(os.sep)[-1]
-    project_settings = fu.read_data(os.path.join(path, cfg.pulse_data_dir, cfg.project_settings))
+    project_settings = fu.read_data(fu.path_join(path, cfg.pulse_data_dir, cfg.project_settings))
     cnx = Connection(
         adapter=project_settings['connection']['adapter'],
         path=project_settings['connection']['path'],
